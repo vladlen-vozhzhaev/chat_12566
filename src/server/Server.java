@@ -1,9 +1,13 @@
 package server;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.stream.Stream;
 
 public class Server {
     public static void main(String[] args) {
@@ -20,21 +24,28 @@ public class Server {
                     @Override
                     public void run() {
                         try {
-                            user.getOut().writeUTF("Ввдите имя: ");
+                            sendMessage(user, "Ввдите имя: ");
                             String username = user.getIs().readUTF();
                             user.setName(username);
-                            user.getOut().writeUTF("Добро пожаловать на сервер");
+                            sendMessage(user, "Добро пожаловать на сервер");
+                            sendOnlineUsers(users);
                             String request;
                             while (true){
                                 request = user.getIs().readUTF();// ждём пока поступит сообщение
                                 System.out.println("Сообщение от клиента: "+request);
                                 for (User user1 : users) {
                                     if (user.equals(user1)) continue;
-                                    user1.getOut().writeUTF(user.getName()+": "+request);
+                                    sendMessage(user1, user.getName()+": "+request);
                                 }
                             }
                         }catch (IOException e){
                             users.remove(user);
+                            try {
+                                sendOnlineUsers(users);
+                            }catch (IOException exception){
+                                exception.printStackTrace();
+                            }
+
                         }
                     }
                 });
@@ -44,6 +55,24 @@ public class Server {
 
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    static void sendMessage(User user, String message) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("message", message);
+        user.getOut().writeUTF(jsonObject.toJSONString());
+    }
+
+    static void sendOnlineUsers(ArrayList<User> users) throws IOException {
+        JSONArray jsonArray = new JSONArray();
+        JSONObject jsonObject = new JSONObject();
+        for (User user : users) {
+            jsonArray.add(user.getName());
+        }
+        jsonObject.put("onlineUsers", jsonArray);
+        for (User user : users) {
+            user.getOut().writeUTF(jsonObject.toJSONString());
         }
     }
 }
