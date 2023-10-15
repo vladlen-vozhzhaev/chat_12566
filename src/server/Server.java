@@ -6,8 +6,8 @@ import org.json.simple.JSONObject;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.stream.Stream;
 
 public class Server {
     public static void main(String[] args) {
@@ -15,6 +15,7 @@ public class Server {
         try {
             ServerSocket serverSocket = new ServerSocket(9123);
             System.out.println("Сервер запущен");
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
             while (true){
                 Socket socket = serverSocket.accept(); // Ждём подключения клиентов
                 User user = new User(socket);
@@ -24,9 +25,20 @@ public class Server {
                     @Override
                     public void run() {
                         try {
-                            sendMessage(user, "Ввдите имя: ");
-                            String username = user.getIs().readUTF();
-                            user.setName(username);
+                            sendMessage(user, "Для регистрации /reg, \n для авторизации /login");
+                            String command = user.getIs().readUTF();
+
+                            while (true){
+                                if(command.equals("/reg")){// Регистрируем
+                                    user.reg();
+                                    break;
+                                }else if (command.equals("/login")){ // Авторизуем
+                                    if(user.login()) break;
+                                }else{
+                                    sendMessage(user, "Неверная команда");
+                                }
+                            }
+
                             sendMessage(user, "Добро пожаловать на сервер");
                             sendOnlineUsers(users);
                             String request;
@@ -46,6 +58,8 @@ public class Server {
                                 exception.printStackTrace();
                             }
 
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 });
@@ -53,7 +67,7 @@ public class Server {
 
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
