@@ -2,6 +2,8 @@ package server;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -43,15 +45,25 @@ public class Server {
                             sendOnlineUsers(users);
                             String request;
                             while (true){
+                                JSONParser jsonParser = new JSONParser();
                                 request = user.getIs().readUTF();// ждём пока поступит сообщение
+                                JSONObject jsonObject = (JSONObject) jsonParser.parse(request);
+                                int toId = Integer.parseInt(jsonObject.get("toId").toString());
+                                Message message = new Message(user.getUserId(), toId, jsonObject.get("message").toString());
+                                message.save();
                                 System.out.println("Сообщение от клиента: "+request);
                                 for (User user1 : users) {
                                     if (user.equals(user1)) continue;
-                                    sendMessage(user1, user.getName()+": "+request);
+                                    else if (user1.getUserId() == toId) {
+                                        sendMessage(user1, user.getName()+": "+request);
+                                    } else if (toId == 0) {
+                                        sendMessage(user1, user.getName()+": "+request);
+                                    }
                                 }
                             }
                         }catch (IOException e){
                             users.remove(user);
+                            System.out.println("Клиент "+user.getName()+" отключился");
                             try {
                                 sendOnlineUsers(users);
                             }catch (IOException exception){
@@ -59,6 +71,8 @@ public class Server {
                             }
 
                         } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        } catch (ParseException e) {
                             throw new RuntimeException(e);
                         }
                     }
@@ -79,12 +93,17 @@ public class Server {
     }
 
     static void sendOnlineUsers(ArrayList<User> users) throws IOException {
-        JSONArray jsonArray = new JSONArray();
-        JSONObject jsonObject = new JSONObject();
+        JSONArray jsonArray = new JSONArray(); // jsonArray = []
+        JSONObject jsonObject = new JSONObject(); // jsonObject = {}
         for (User user : users) {
-            jsonArray.add(user.getName());
+            JSONObject jsonUser = new JSONObject(); // jsonUser = {}
+            jsonUser.put("id", user.getUserId());
+            jsonUser.put("name", user.getName());
+            // jsonUser = {"id": 1, "name": "Ivan"}
+            jsonArray.add(jsonUser);
         }
-        jsonObject.put("onlineUsers", jsonArray);
+        // jsonArray = [{"id": 1, "name": "Ivan"},{"id": 2, "name": "Oleg"},{"id": 3, "name": "Igor"}]
+        jsonObject.put("onlineUsers", jsonArray); // jsonObject = {"onlineUsers": [{"id": 1, "name": "Ivan"},{"id": 2, "name": "Oleg"},{"id": 3, "name": "Igor"}]}
         for (User user : users) {
             user.getOut().writeUTF(jsonObject.toJSONString());
         }
