@@ -27,21 +27,19 @@ public class Server {
                     @Override
                     public void run() {
                         try {
-                            sendMessage(user, "Для регистрации /reg, \n для авторизации /login");
-                            String command = Message.readMessage(user).getMsg();
-
+                            Message.sendMessage(user, "Для регистрации /reg, \n для авторизации /login");
                             while (true){
+                                String command = Message.readMessage(user).getMsg();
                                 if(command.equals("/reg")){// Регистрируем
-                                    user.reg();
-                                    break;
+                                    if(user.reg()) break;
                                 }else if (command.equals("/login")){ // Авторизуем
                                     if(user.login()) break;
                                 }else{
-                                    sendMessage(user, "Неверная команда");
+                                    Message.sendMessage(user, "Неверная команда");
                                 }
                             }
 
-                            sendMessage(user, "Добро пожаловать на сервер");
+                            Message.sendMessage(user, "Добро пожаловать на сервер");
                             sendOnlineUsers(users);
                             Message.sendHistoryMessage(user, 0);
                             while (true){
@@ -52,9 +50,9 @@ public class Server {
                                 for (User user1 : users) {
                                     if (user.equals(user1)) continue;
                                     else if (user1.getUserId() == message.getToId()) {
-                                        sendMessage(user1, user.getName()+": "+message.getMsg());
+                                        Message.sendMessage(user1, user.getName()+": "+message.getMsg());
                                     } else if (message.getToId() == 0) {
-                                        sendMessage(user1, user.getName()+": "+message.getMsg());
+                                        Message.sendMessage(user1, user.getName()+": "+message.getMsg());
                                     }
                                 }
                             }
@@ -75,19 +73,13 @@ public class Server {
                     }
                 });
                 thread.start();
-
             }
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    static void sendMessage(User user, String message) throws IOException {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("message", message);
-        user.getOut().writeUTF(jsonObject.toJSONString());
-    }
+
 
     static void sendOnlineUsers(ArrayList<User> users) throws IOException {
         JSONArray jsonArray = new JSONArray(); // jsonArray = []

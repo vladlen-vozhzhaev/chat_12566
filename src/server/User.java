@@ -45,27 +45,22 @@ public class User {
     }
 
     public boolean reg() throws IOException, SQLException, ParseException {
-        Connection connection = DriverManager.getConnection(Database.DB_URL, Database.DB_LOGIN, Database.DB_PASSWORD);
-        Statement statement = connection.createStatement();
-        Server.sendMessage(this, "Введите Имя");
+        Message.sendMessage(this, "Введите Имя");
         String name = Message.readMessage(this).getMsg();
-        Server.sendMessage(this, "Введите логин");
+        Message.sendMessage(this, "Введите логин");
         String login = Message.readMessage(this).getMsg();
-        Server.sendMessage(this, "Введите пароль");
+        Message.sendMessage(this, "Введите пароль");
         String pass = Message.readMessage(this).getMsg();
         // ДЗ: проверить, можно ли зарегистрировать пользователя (проверить что такого логина нет)
-        statement.executeUpdate("INSERT INTO `users`(`name`, `login`, `pass`) VALUES ('"+name+"','"+login+"','"+pass+"')");
-        statement.close();
+        Database.update("INSERT INTO `users`(`name`, `login`, `pass`) VALUES ('"+name+"','"+login+"','"+pass+"')");
         return true;
     }
     public boolean login() throws IOException, SQLException, ParseException {
-        Connection connection = DriverManager.getConnection(Database.DB_URL, Database.DB_LOGIN, Database.DB_PASSWORD);
-        Statement statement = connection.createStatement();
-        Server.sendMessage(this, "Введите логин");
+        Message.sendMessage(this, "Введите логин");
         String login = Message.readMessage(this).getMsg();
-        Server.sendMessage(this, "Введите пароль");
+        Message.sendMessage(this, "Введите пароль");
         String pass = Message.readMessage(this).getMsg();
-        ResultSet resultSet = statement.executeQuery("SELECT * FROM `users` WHERE `login`='"+login+"' AND `pass`='"+pass+"'");
+        ResultSet resultSet = Database.query("SELECT * FROM `users` WHERE `login`='"+login+"' AND `pass`='"+pass+"'");
         if(resultSet.next()){
             String name = resultSet.getString("name");
             int userId = resultSet.getInt("id");
@@ -73,7 +68,7 @@ public class User {
             this.setUserId(userId);
             return true;
         }else{
-            Server.sendMessage(this, "Неправильный логин или пароль");
+            Message.sendMessage(this, "Неправильный логин или пароль");
             return false;
         }
     }

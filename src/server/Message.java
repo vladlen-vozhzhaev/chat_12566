@@ -29,14 +29,7 @@ public class Message {
     }
 
     public void save(){
-        Connection connection = null;
-        try {
-            connection = DriverManager.getConnection(Database.DB_URL, Database.DB_LOGIN, Database.DB_PASSWORD);
-            Statement statement = connection.createStatement();
-            statement.executeUpdate("INSERT INTO messages (from_id, to_id, msg) VALUES ('"+fromId+"','"+toId+"','"+msg+"')");
-        } catch (SQLException e) {
-            System.out.println("Не удалось сохранить сообщение в базу данных");
-        }
+        Database.update("INSERT INTO messages (from_id, to_id, msg) VALUES ('"+fromId+"','"+toId+"','"+msg+"')");
     }
 
     public static Message readMessage(User user) throws IOException, ParseException, SQLException {
@@ -54,18 +47,21 @@ public class Message {
         }
         return null;
     }
+    static void sendMessage(User user, String message) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("message", message);
+        user.getOut().writeUTF(jsonObject.toJSONString());
+    }
 
     public static void sendHistoryMessage(User user, int targetId) throws SQLException, IOException {
-        Connection connection = DriverManager.getConnection(Database.DB_URL, Database.DB_LOGIN, Database.DB_PASSWORD);
-        Statement statement = connection.createStatement();
         ResultSet resultSet;
         if(targetId == 0){
-            resultSet = statement.executeQuery("SELECT * FROM messages WHERE to_id = 0");
+            resultSet = Database.query("SELECT users.name, messages.msg, messages.to_id, messages.from_id, messages.created_at FROM messages, users WHERE to_id = 0 and from_id=users.id;");
         }else{
-            resultSet = statement.executeQuery("SELECT * FROM `messages` WHERE to_id in("+user.getUserId()+","+targetId+") AND from_id in("+user.getUserId()+","+targetId+")");
+            resultSet = Database.query("SELECT users.name, messages.msg, messages.to_id, messages.from_id, messages.created_at FROM `messages`, users WHERE to_id in("+user.getUserId()+","+targetId+") AND from_id in("+user.getUserId()+","+targetId+") AND (from_id=users.id)");
         }
         while (resultSet.next()){
-            Server.sendMessage(user, resultSet.getString("msg"));
+            sendMessage(user, resultSet.getString("name")+": "+resultSet.getString("msg"));
         }
     }
 }
