@@ -28,7 +28,7 @@ public class Server {
                     public void run() {
                         try {
                             sendMessage(user, "Для регистрации /reg, \n для авторизации /login");
-                            String command = user.getIs().readUTF();
+                            String command = Message.readMessage(user).getMsg();
 
                             while (true){
                                 if(command.equals("/reg")){// Регистрируем
@@ -43,21 +43,18 @@ public class Server {
 
                             sendMessage(user, "Добро пожаловать на сервер");
                             sendOnlineUsers(users);
-                            String request;
+                            Message.sendHistoryMessage(user, 0);
                             while (true){
-                                JSONParser jsonParser = new JSONParser();
-                                request = user.getIs().readUTF();// ждём пока поступит сообщение
-                                JSONObject jsonObject = (JSONObject) jsonParser.parse(request);
-                                int toId = Integer.parseInt(jsonObject.get("toId").toString());
-                                Message message = new Message(user.getUserId(), toId, jsonObject.get("message").toString());
+                                Message message = Message.readMessage(user);
+                                if(message == null) continue;
                                 message.save();
-                                System.out.println("Сообщение от клиента: "+request);
+                                System.out.println("Сообщение от клиента: "+message.getMsg());
                                 for (User user1 : users) {
                                     if (user.equals(user1)) continue;
-                                    else if (user1.getUserId() == toId) {
-                                        sendMessage(user1, user.getName()+": "+request);
-                                    } else if (toId == 0) {
-                                        sendMessage(user1, user.getName()+": "+request);
+                                    else if (user1.getUserId() == message.getToId()) {
+                                        sendMessage(user1, user.getName()+": "+message.getMsg());
+                                    } else if (message.getToId() == 0) {
+                                        sendMessage(user1, user.getName()+": "+message.getMsg());
                                     }
                                 }
                             }

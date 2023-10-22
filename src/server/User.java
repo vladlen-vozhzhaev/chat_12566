@@ -1,5 +1,7 @@
 package server;
 
+import org.json.simple.parser.ParseException;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -42,27 +44,27 @@ public class User {
         return out;
     }
 
-    public boolean reg() throws IOException, SQLException {
+    public boolean reg() throws IOException, SQLException, ParseException {
         Connection connection = DriverManager.getConnection(Database.DB_URL, Database.DB_LOGIN, Database.DB_PASSWORD);
         Statement statement = connection.createStatement();
         Server.sendMessage(this, "Введите Имя");
-        String name = this.getIs().readUTF();
+        String name = Message.readMessage(this).getMsg();
         Server.sendMessage(this, "Введите логин");
-        String login = this.getIs().readUTF();
+        String login = Message.readMessage(this).getMsg();
         Server.sendMessage(this, "Введите пароль");
-        String pass = this.getIs().readUTF();
+        String pass = Message.readMessage(this).getMsg();
         // ДЗ: проверить, можно ли зарегистрировать пользователя (проверить что такого логина нет)
         statement.executeUpdate("INSERT INTO `users`(`name`, `login`, `pass`) VALUES ('"+name+"','"+login+"','"+pass+"')");
         statement.close();
         return true;
     }
-    public boolean login() throws IOException, SQLException {
+    public boolean login() throws IOException, SQLException, ParseException {
         Connection connection = DriverManager.getConnection(Database.DB_URL, Database.DB_LOGIN, Database.DB_PASSWORD);
         Statement statement = connection.createStatement();
         Server.sendMessage(this, "Введите логин");
-        String login = this.getIs().readUTF();
+        String login = Message.readMessage(this).getMsg();
         Server.sendMessage(this, "Введите пароль");
-        String pass = this.getIs().readUTF();
+        String pass = Message.readMessage(this).getMsg();
         ResultSet resultSet = statement.executeQuery("SELECT * FROM `users` WHERE `login`='"+login+"' AND `pass`='"+pass+"'");
         if(resultSet.next()){
             String name = resultSet.getString("name");
